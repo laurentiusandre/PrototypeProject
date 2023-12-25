@@ -38,6 +38,34 @@
     return r.results[0];
   };
   
+  export const getLocations = async city => {
+
+    console.log('fetching data to: ' + `https://geocoding-api.open-meteo.com/v1/search?name=${city}`);
+    const response = await fetch(
+      `https://geocoding-api.open-meteo.com/v1/search?name=${city}`,
+    );
+  
+    const r = await response.json();
+  
+    console.log('r: ' + r);
+    console.log('r.results.length: ' + r.results.length);
+    const unique = [];
+    r.results.map(x => unique.filter(a => a.id == x.id).length > 0 ? null : unique.push(x));
+    return unique;
+  };
+
+  export const removeDuplicatesSafe = arr => {
+    var seen = {};
+    var ret_arr = [];
+    for (var i = 0; i < arr.length; i++) {
+        if (!(arr[i] in seen)) {
+            ret_arr.push(arr[i]);
+            seen[arr[i]] = true;
+        }
+    }
+    return ret_arr;
+}
+  
   /*
    * GEt WEATHER by current Location <<< iD  >>>
    * Example ``RESPONSE``:
@@ -76,7 +104,7 @@
     let { weather_code, temperature_2m, time } = current;
   
     return {
-      location: r.name + ", " + r.country,
+      location: r.name,
       weathercode: weather_code,
       temperature: temperature_2m,
       created: time

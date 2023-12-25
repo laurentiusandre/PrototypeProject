@@ -12,6 +12,9 @@ export default class SearchInput extends React.Component {
   }
 
   handleChangeText = text => {
+    const { onChangeText } = this.props;
+
+    onChangeText(text);
     this.setState({ text });
   };
 
@@ -21,8 +24,8 @@ export default class SearchInput extends React.Component {
 
     if (!text) return;
 
-    onSubmit (text);
-    this.setState({ text: '' });
+    onSubmit(text);
+    // this.setState({ text: '' });
   };
 
   render() {
@@ -50,6 +53,7 @@ export default class SearchInput extends React.Component {
 
 SearchInput.propTypes = {
   onSubmit: PropTypes.func.isRequired,
+  onChangeText: PropTypes.func,
   placeholder: PropTypes.string,
 };
 

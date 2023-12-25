@@ -8,12 +8,15 @@ import {
   Platform,
   ActivityIndicator,
   StatusBar,
+  FlatList,
+  Pressable,
 } from 'react-native';
-import { getLocation, getWeather } from './src/utils/api';
+import { getLocation, getLocations, getWeather } from './src/utils/api';
 import getImageForWeather from './src/utils/getImageForWeather';
 import getIconForWeather from './src/utils/getIconForWeather';
 import moment from 'moment';
 import SearchInput from './src/components/SearchInput';
+import { throttle, debounce } from "throttle-debounce";
 
 export default class App extends React.Component {
   constructor(props) {
@@ -22,27 +25,30 @@ export default class App extends React.Component {
     // bind SCOPE
     this.handleDate = this.handleDate.bind(this);
 
-    // STATE
+    // state
     this.state = {
       loading: false,
       error: false,
+      input: '',
+      locations: [],
 
       location: '',
+      current: {},
       temperature: 0,
       weather: '',
       created: '2000-01-01T00:00:00.000000Z'
     };
 
   }
-  // Life cycle
+  // Lifecycle
   componentDidMount() {
     this.handleUpdateLocation('Bandung');
   }
 
-  // Parse of date
+  // Parse date
   handleDate = date => moment(date).format("HH:mm");
 
-  // Parse of date
+  // Map weather code
   handleWeatherCode = weathercode => {
     switch (weathercode) {
       case 0:
@@ -81,11 +87,40 @@ export default class App extends React.Component {
   handleUpdateLocation = async city => {
     if (!city) return;
 
+    console.log('city: ' + city);
     this.setState({ loading: true }, async () => {
+      console.log('async');
       try {
-        const loc = await getLocation(city);
+        console.log('getting locations:');
+        const locs = await getLocations(city);
+        console.log('locs size:' + locs.length);
+        this.setState({
+          locations: locs,
+        });
+        this.handleUpdateLocationByCoord(locs[0]);
+      } catch (e) {
+        this.setState({
+          loading: false,
+          error: true,
+        });
+      }
+    });
+  };
+
+  // Update current location
+  handleUpdateLocationByCoord = async item => {
+    this.setState({ loading: true }, async () => {
+      console.log('async');
+      // if (item.latitude === current.latitude &&
+      //       item.longitude === current.longitude && !error) {
+      //     console.log('lat/long already requested');
+      //     return;
+      // }
+      try {
+        const loc = item;
         console.log(loc.name);
-        const { location, weathercode, temperature, created } = await getWeather(loc);
+        const current = await getWeather(loc);
+        const { location, weathercode, temperature, created } = current;
       
         const weather = this.handleWeatherCode(weathercode);
         console.log(weathercode);
@@ -95,6 +130,7 @@ export default class App extends React.Component {
           loading: false,
           error: false,
           location,
+          current,
           weather,
           temperature,
           created,
@@ -108,11 +144,46 @@ export default class App extends React.Component {
     });
   };
 
+  // Update location suggestions
+  handleChangeText = text => {
+    console.log('text: ' + text);
+    this.setState({
+      input: text,
+      locations: []
+    });
+    if (text.length < 5) {
+      // throttle(500, this.handleUpdateLocation(text));
+    } else {
+      debounce(1000, this.handleUpdateLocation(text));
+    }
+  };
+
+  getItemText = item => {
+    let mainText = this.getTitle(item);
+
+    return (
+      <View style={{ flexDirection: "row", alignItems: "center", padding: 15 }}>
+        <View style={{ flexShrink: 1 }}>
+          <Text style={{ fontWeight: "700" }}>{mainText}</Text>
+          <Text style={{ fontSize: 12 }}>{item.country}</Text>
+        </View>
+      </View>
+    );
+  };
+
+  getTitle = item => {
+    let mainText = item.name;
+    if (item.admin1)
+      mainText += ", " + item.admin1;
+
+    return mainText;
+  };
+
   // RENDERING
   render() {
 
     // GET values of state
-    const { loading, error, location, weather, temperature, created } = this.state;
+    const { loading, error, input, locations, location, weather, temperature, created } = this.state;
 
     // Activity
     return (
@@ -127,43 +198,61 @@ export default class App extends React.Component {
         >
 
           <View style={styles.detailsContainer}>
+            <View>
+              {error && (
+                <Text style={[styles.smallText, styles.textStyle]}>
+                  😞 Could not load your city or weather. Please try again later...
+                </Text>
+              )}
 
-            <ActivityIndicator animating={loading} color="white" size="large" />
+              <ActivityIndicator animating={loading} color="white" size="large" />
 
-            {!loading && (
-              <View>
-                {error && (
-                  <Text style={[styles.smallText, styles.textStyle]}>
-                    😞 Could not load your city or weather. Please try again later...
+              {!loading && !error && (
+                <View>
+                  <Text style={[styles.largeText, styles.textStyle]}>
+                    {getIconForWeather(weather)} {location}
                   </Text>
-                )}
-                {!error && (
-                  <View>
-                    <Text style={[styles.largeText, styles.textStyle]}>
-                      {getIconForWeather(weather)} {location}
-                    </Text>
-                    <Text style={[styles.smallText, styles.textStyle]}>
-                       {weather}
-                    </Text>
-                    <Text style={[styles.largeText, styles.textStyle]}>
-                      {`${Math.round(temperature)}°`}
-                    </Text>
-                  </View>
-                )}
-
-                <SearchInput
-                  placeholder="Search any city..."
-                  onSubmit={this.handleUpdateLocation}
-                />
-
-                {!error && (
                   <Text style={[styles.smallText, styles.textStyle]}>
-                    Last update: {this.handleDate(created)}
+                      {weather}
                   </Text>
-                )}
+                  <Text style={[styles.largeText, styles.textStyle]}>
+                    {`${Math.round(temperature)}°`}
+                  </Text>
+                </View>
+              )}
 
-              </View>
-            )}
+              <SearchInput
+                placeholder="Search any city..."
+                onSubmit={this.handleUpdateLocation}
+                onChangeText={this.handleChangeText}
+              />
+              {input && locations.length > 0 ? (
+                <View style={styles.autocompleteContainer}>
+                  <FlatList
+                    data={locations}
+                    showsVerticalScrollIndicator={false}
+                    renderItem={({ item, index }) => (
+                      <Pressable
+                        style={({ pressed }) => [{ opacity: pressed ? 0.5 : 1 }]}
+                        onPress={() =>
+                          this.handleUpdateLocationByCoord(item)
+                        }
+                      >
+                        {this.getItemText(item)}
+                      </Pressable>
+                    )}
+                    keyExtractor={(item, index) => item.id + index}
+                  />
+                </View>
+              ) : null}
+
+              {!error && (
+                <Text style={[styles.smallText, styles.textStyle]}>
+                  Last update: {this.handleDate(created)}
+                </Text>
+              )}
+
+            </View>
           </View>
         </ImageBackground>
       </KeyboardAvoidingView>
@@ -190,6 +279,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(0,0,0,0.2)',
     paddingHorizontal: 20,
+  },
+  autocompleteContainer: {
+    height: 180,
+    backgroundColor: 'rgba(255,255,255,0.5)',
+    marginHorizontal: 20,
+    paddingHorizontal: 10,
+    borderRadius: 5,
   },
   textStyle: {
     textAlign: 'center',
