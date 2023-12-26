@@ -1,55 +1,38 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 import PropTypes from 'prop-types';
 
-export default class SearchInput extends React.Component {
+const SearchInput = ({ onSubmit, onChangeText, placeholder = '' }) => {
+  const [text, setText] = useState('');
 
-  constructor(props) {
-    super(props);
-    this.state = {
-      text: '',
-    };
-  }
-
-  handleChangeText = text => {
-    const { onChangeText } = this.props;
-
+  const handleChangeText = (text) => {
     onChangeText(text);
-    this.setState({ text });
+    setText(text);
   };
 
-  handleSubmitEditing = () => {
-    const { onSubmit } = this.props;
-    const { text } = this.state;
-
+  const handleSubmitEditing = () => {
     if (!text) return;
-
     onSubmit(text);
-    this.setState({ text: '' });
+    setText('');
   };
 
-  render() {
-    const { placeholder } = this.props;
-    const { text } = this.state;
-
-    return (
-      <View style={styles.container}>
-        <TextInput
-          autoCorrect={false}
-          value={text}
-          placeholder={placeholder}
-          placeholderTextColor="gray"
-          underlineColorAndroid="transparent"
-          textAlign="center"
-          style={styles.textInput}
-          clearButtonMode="always"
-          onChangeText={this.handleChangeText}
-          onSubmitEditing={this.handleSubmitEditing}
-        />
-      </View>
-    );
-  }
-}
+  return (
+    <View style={styles.container}>
+      <TextInput
+        autoCorrect={false}
+        value={text}
+        placeholder={placeholder}
+        placeholderTextColor="gray"
+        underlineColorAndroid="transparent"
+        textAlign="center"
+        style={styles.textInput}
+        clearButtonMode="always"
+        onChangeText={handleChangeText}
+        onSubmitEditing={handleSubmitEditing}
+      />
+    </View>
+  );
+};
 
 SearchInput.propTypes = {
   onSubmit: PropTypes.func.isRequired,
@@ -76,3 +59,5 @@ const styles = StyleSheet.create({
     color: '#222',
   },
 });
+
+export default SearchInput;
