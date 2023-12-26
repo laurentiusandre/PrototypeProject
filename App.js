@@ -31,10 +31,9 @@ const App = () => {
     latitude: '',
     longitude: '',
     weathercode: '',
-    temperature: '',
+    temperature: 0.0,
     created: '2000-01-01T00:00:00.000000Z'
   });
-  const [temperature, setTemperature] = useState(0);
   const [weather, setWeather] = useState('');
   const [created, setCreated] = useState('2000-01-01T00:00:00.000000Z');
 
@@ -124,7 +123,6 @@ const App = () => {
       setLocation(location);
       setCurrent(current);
       setWeather(weather);
-      setTemperature(temperature);
       setCreated(created);
     } catch (e) {
       setError(true);
@@ -156,8 +154,8 @@ const App = () => {
       console.log('table created');
       
       const storedWeatherItems = await getWeatherItems(db);
-      console.log('storedWeatherItems.length: ' + storedWeatherItems.length);
-      if (storedWeatherItems.length) {
+      console.log('storedWeatherItems.length: ' + storedWeatherItems?.length);
+      if (storedWeatherItems?.length) {
         setWeatherList(storedWeatherItems);
         handleUpdateLocation(storedWeatherItems[0].value);
       } else {
@@ -235,7 +233,7 @@ const App = () => {
                     {weather}
                 </Text>
                 <Text style={[styles.largeText, styles.textStyle]}>
-                  {`${Math.round(temperature)}°`}
+                  {`${Math.round(current.temperature)}°`}
                 </Text>
               </View>
             )}
