@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -10,6 +10,7 @@ import {
   StatusBar,
   FlatList,
   Pressable,
+  useColorScheme,
 } from 'react-native';
 import { getLocation, getLocations, getWeather } from './src/utils/api';
 import getImageForWeather from './src/utils/getImageForWeather';
@@ -17,39 +18,30 @@ import getIconForWeather from './src/utils/getIconForWeather';
 import moment from 'moment';
 import SearchInput from './src/components/SearchInput';
 import { throttle, debounce } from "throttle-debounce";
+import WeatherItem from './src/models/WeatherItem';
+import { getDBConnection, getWeatherItems, saveWeatherItems, createTable, clearTable, deleteWeatherItem } from './src/services/dbService';
 
-export default class App extends React.Component {
-  constructor(props) {
-    super(props);
+const App = () => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+  const [input, setInput] = useState('');
+  const [locations, setLocations] = useState([]);
+  const [location, setLocation] = useState('');
+  const [current, setCurrent] = useState({});
+  const [temperature, setTemperature] = useState(0);
+  const [weather, setWeather] = useState('');
+  const [created, setCreated] = useState('2000-01-01T00:00:00.000000Z');
 
-    // bind SCOPE
-    this.handleDate = this.handleDate.bind(this);
+  const isDarkMode = useColorScheme() === 'dark';
+  const [weatherList, setWeatherList] = useState([]);
+  const [newWeather, setNewWeather] = useState('');
 
-    // state
-    this.state = {
-      loading: false,
-      error: false,
-      input: '',
-      locations: [],
-
-      location: '',
-      current: {},
-      temperature: 0,
-      weather: '',
-      created: '2000-01-01T00:00:00.000000Z'
-    };
-
-  }
-  // Lifecycle
-  componentDidMount() {
-    this.handleUpdateLocation('Bandung');
-  }
-
-  // Parse date
-  handleDate = date => moment(date).format("HH:mm");
+  const handleDate = date => {
+    return moment(date).format("HH:mm");
+  };
 
   // Map weather code
-  handleWeatherCode = weathercode => {
+  const handleWeatherCode = weathercode => {
     switch (weathercode) {
       case 0:
       case 1: return "Clear";
@@ -84,82 +76,70 @@ export default class App extends React.Component {
   }
 
   // Update current location
-  handleUpdateLocation = async city => {
+  const handleUpdateLocation = async city => {
     if (!city) return;
 
     console.log('city: ' + city);
-    this.setState({ loading: true }, async () => {
-      console.log('async');
-      try {
-        console.log('getting locations:');
-        const locs = await getLocations(city);
-        console.log('locs size:' + locs.length);
-        this.setState({
-          locations: locs,
-        });
-        this.handleUpdateLocationByCoord(locs[0]);
-      } catch (e) {
-        this.setState({
-          loading: false,
-          error: true,
-        });
-      }
-    });
-  };
-
-  // Update current location
-  handleUpdateLocationByCoord = async item => {
-    this.setState({ loading: true }, async () => {
-      console.log('async');
-      // if (item.latitude === current.latitude &&
-      //       item.longitude === current.longitude && !error) {
-      //     console.log('lat/long already requested');
-      //     return;
-      // }
-      try {
-        const loc = item;
-        console.log(loc.name);
-        const current = await getWeather(loc);
-        const { location, weathercode, temperature, created } = current;
-      
-        const weather = this.handleWeatherCode(weathercode);
-        console.log(weathercode);
-        console.log(weather);
-
-        this.setState({
-          loading: false,
-          error: false,
-          location,
-          current,
-          weather,
-          temperature,
-          created,
-        });
-      } catch (e) {
-        this.setState({
-          loading: false,
-          error: true,
-        });
-      }
-    });
-  };
-
-  // Update location suggestions
-  handleChangeText = text => {
-    console.log('text: ' + text);
-    this.setState({
-      input: text,
-      locations: []
-    });
-    if (text.length < 5) {
-      // throttle(500, this.handleUpdateLocation(text));
-    } else {
-      debounce(1000, this.handleUpdateLocation(text));
+    setLoading(true);
+    
+    try {
+      console.log('getting locations:');
+      const locs = await getLocations(city);
+      console.log('locs size:' + locs.length);
+      setLocations(locs);
+      handleUpdateLocationByCoord(locs[0]);
+    } catch (e) {
+      setLoading(false);
+      setError(true);
     }
   };
 
-  getItemText = item => {
-    let mainText = this.getTitle(item);
+  // Update current location
+  const handleUpdateLocationByCoord = async item => {
+    setLoading(true);
+    // if (item.latitude === current.latitude &&
+    //       item.longitude === current.longitude && !error) {
+    //     console.log('lat/long already requested');
+    //     return;
+    // }
+
+    try {
+      const loc = item;
+      console.log(loc.name);
+      const current = await getWeather(loc);
+      const { location, weathercode, temperature, created } = current;
+    
+      const weather = handleWeatherCode(weathercode);
+      console.log(weathercode);
+      console.log(weather);
+
+      setLoading(false);
+      setError(false);
+      setLocation(location);
+      setCurrent(current);
+      setWeather(weather);
+      setTemperature(temperature);
+      setCreated(created);
+    } catch (e) {
+      setLoading(false);
+      setError(true);
+    }
+  };
+
+  // Update location suggestions
+  const handleChangeText = text => {
+    console.log('text: ' + text);
+    setInput(text);
+    setLocations([]);
+    if (text.length < 5) {
+      // throttle(500, handleUpdateLocation(text));
+    } else {
+      debounce(1000, handleUpdateLocation(text));
+    }
+  };
+
+  const getItemText = item => {
+    let mainText = getTitle(item);
 
     return (
       <View style={{ flexDirection: "row", alignItems: "center", padding: 15 }}>
@@ -171,7 +151,7 @@ export default class App extends React.Component {
     );
   };
 
-  getTitle = item => {
+  const getTitle = item => {
     let mainText = item.name;
     if (item.admin1)
       mainText += ", " + item.admin1;
@@ -179,86 +159,151 @@ export default class App extends React.Component {
     return mainText;
   };
 
-  // RENDERING
-  render() {
+  const loadDataCallback = useCallback(async () => {
+    try {
+      const initWeatherList = [{ id: 0, value: 'Seoul' }, { id: 1, value: 'Bandung' }, { id: 2, value: 'Medan' }];
+      console.log('getting db connection');
+      const db = getDBConnection();
+      console.log('db connection ok');
+      await createTable(db);
+      console.log('table created');
+      const storedWeatherItems = await getWeatherItems(db);
+      console.log('storedWeatherItems.length: ' + storedWeatherItems.length);
+      if (storedWeatherItems.length) {
+        console.log('storedWeatherItems.length');
+        setWeatherList(storedWeatherItems);
+      } else {
+        console.log('storedWeatherItems null, init new list');
+        await saveWeatherItems(db, initWeatherList);
+        setWeatherList(initWeatherList);
+        handleUpdateLocation(initWeatherList[0].value);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }, []);
 
-    // GET values of state
-    const { loading, error, input, locations, location, weather, temperature, created } = this.state;
+  useEffect(() => {
+    loadDataCallback();
+  }, []);
 
-    // Activity
-    return (
-      <KeyboardAvoidingView style={styles.container} behavior="padding">
+  useEffect(() => {
+    if (weatherList && weatherList.length > 0) {
+      weatherList.forEach(element => {
+        console.log('element.id: ' + element.id);
+        console.log('element.value: ' + element.value);
+      });
+      // handleUpdateLocation(weatherList[0].value);
+    }
+  }, [weatherList]);
 
-        <StatusBar barStyle="light-content" />
+  useEffect(() => {
+    addWeather();
+  }, [location]);
 
-        <ImageBackground
-          source={getImageForWeather(weather)}
-          style={styles.imageContainer}
-          imageStyle={styles.image}
-        >
+  const addWeather = async () => {
+    if (!location.trim()) return;
+    try {
+      // const newWeatherList = [...weatherList, {
+      //   id: weatherList.length ? weatherList.reduce((acc, cur) => {
+      //     if (cur.id > acc.id) return cur;
+      //     return acc;
+      //   }).id + 1 : 0, value: location
+      // }];
+      
+      const newWeatherList = [...weatherList];
+      newWeatherList[0] = { id: 0, value: location }
+      setWeatherList(newWeatherList);
+      const db = getDBConnection();
+      await saveWeatherItems(db, newWeatherList);
+      setNewWeather('');
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
-          <View style={styles.detailsContainer}>
-            <View>
-              {error && (
-                <Text style={[styles.smallText, styles.textStyle]}>
-                  😞 Could not load your city or weather. Please try again later...
+  const deleteItem = async (id) => {
+    try {
+      const db =  getDBConnection();
+      await deleteWeatherItem(db, id);
+      weatherList.splice(id, 1);
+      setWeatherList(weatherList.slice(0));
+    } catch (error) {
+      console.error(error);
+    }
+  };
+  return (
+    <KeyboardAvoidingView style={styles.container} behavior="padding">
+
+      <StatusBar barStyle="light-content" />
+
+      <ImageBackground
+        source={getImageForWeather(weather)}
+        style={styles.imageContainer}
+        imageStyle={styles.image}
+      >
+
+        <View style={styles.detailsContainer}>
+          <View>
+            {error && (
+              <Text style={[styles.smallText, styles.textStyle]}>
+                😞 Could not load your city or weather. Please try again later...
+              </Text>
+            )}
+
+            <ActivityIndicator animating={loading} color="white" size="large" />
+
+            {!loading && !error && (
+              <View>
+                <Text style={[styles.largeText, styles.textStyle]}>
+                  {getIconForWeather(weather)} {location}
                 </Text>
-              )}
-
-              <ActivityIndicator animating={loading} color="white" size="large" />
-
-              {!loading && !error && (
-                <View>
-                  <Text style={[styles.largeText, styles.textStyle]}>
-                    {getIconForWeather(weather)} {location}
-                  </Text>
-                  <Text style={[styles.smallText, styles.textStyle]}>
-                      {weather}
-                  </Text>
-                  <Text style={[styles.largeText, styles.textStyle]}>
-                    {`${Math.round(temperature)}°`}
-                  </Text>
-                </View>
-              )}
-
-              <SearchInput
-                placeholder="Search any city..."
-                onSubmit={this.handleUpdateLocation}
-                onChangeText={this.handleChangeText}
-              />
-              {input && locations.length > 0 ? (
-                <View style={styles.autocompleteContainer}>
-                  <FlatList
-                    data={locations}
-                    showsVerticalScrollIndicator={false}
-                    renderItem={({ item, index }) => (
-                      <Pressable
-                        style={({ pressed }) => [{ opacity: pressed ? 0.5 : 1 }]}
-                        onPress={() =>
-                          this.handleUpdateLocationByCoord(item)
-                        }
-                      >
-                        {this.getItemText(item)}
-                      </Pressable>
-                    )}
-                    keyExtractor={(item, index) => item.id + index}
-                  />
-                </View>
-              ) : null}
-
-              {!error && (
                 <Text style={[styles.smallText, styles.textStyle]}>
-                  Last update: {this.handleDate(created)}
+                    {weather}
                 </Text>
-              )}
+                <Text style={[styles.largeText, styles.textStyle]}>
+                  {`${Math.round(temperature)}°`}
+                </Text>
+              </View>
+            )}
 
-            </View>
+            <SearchInput
+              placeholder="Search any city..."
+              onSubmit={handleUpdateLocation}
+              onChangeText={handleChangeText}
+            />
+            {input && locations.length > 0 ? (
+              <View style={styles.autocompleteContainer}>
+                <FlatList
+                  data={locations}
+                  showsVerticalScrollIndicator={false}
+                  renderItem={({ item, index }) => (
+                    <Pressable
+                      style={({ pressed }) => [{ opacity: pressed ? 0.5 : 1 }]}
+                      onPress={() =>
+                        handleUpdateLocationByCoord(item)
+                      }
+                    >
+                      {getItemText(item)}
+                    </Pressable>
+                  )}
+                  keyExtractor={(item, index) => item.id + index}
+                />
+              </View>
+            ) : null}
+
+            {!error && (
+              <Text style={[styles.smallText, styles.textStyle]}>
+                Last update: {handleDate(created)}
+              </Text>
+            )}
+
           </View>
-        </ImageBackground>
-      </KeyboardAvoidingView>
-    );
-  }
-}
+        </View>
+      </ImageBackground>
+    </KeyboardAvoidingView>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -299,3 +344,4 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
 });
+export default App;
