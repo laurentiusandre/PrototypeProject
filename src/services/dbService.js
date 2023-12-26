@@ -29,29 +29,33 @@ export const createTable = async db => {
 
 export const getWeatherItems = async (db) => {
   try {
-    const weatherItems = [];
-    const results = await db.transaction((tx) => {
-      tx.executeSql(
-        `SELECT rowid as id,value FROM ${tableName}`,
-        [],
-        (txObj, resultSet) => {
-          console.log('Item retrieved successfully!');
-        },
-        (txObj, error) => {
-          console.error('Error retrieving item:', error);
-        }
-      );
-    });
-    if (results) {
-      results.forEach(result => {
-        for (let index = 0; index < result.rows.length; index++) {
-          weatherItems.push(result.rows.item(index))
-          console.log('result name: ' + result.rows.item(index).name);
-        }
+    return new Promise((resolve, reject) => {
+      const weatherItems = [];
+      let resolved = false;
+      db.transaction((tx) => {
+        tx.executeSql(
+          `SELECT rowid as id,value FROM ${tableName}`,
+          [],
+          (txObj, resultSet) => {
+            if (!resolved) {
+              console.log('Item retrieved successfully!');
+              for (let index = 0; index < resultSet.rows.length; index++) {
+                weatherItems.push(resultSet.rows.item(index));
+                console.log('result name: ' + resultSet.rows.item(index).value);
+              }
+              resolve(weatherItems);
+            }
+          },
+          (txObj, error) => {
+            if (!resolved) {
+              resolved = true;
+              console.error('Error retrieving item:', error);
+              reject(error);
+            }
+          }
+        );
       });
-      return weatherItems;
-    }
-    return [];
+    });
   } catch (error) {
     console.error(error);
     throw Error('Failed to get weatherItems');
@@ -94,7 +98,7 @@ export const deleteWeatherItem = async (db, id) => {
 };
 
 export const deleteTable = async (db) => {
-  const query = `drop table ${tableName}`;
+  const query = `DROP TABLE ${tableName}`;
   await db.transaction((tx) => {
     tx.executeSql(
       query,
