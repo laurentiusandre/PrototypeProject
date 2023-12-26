@@ -175,15 +175,17 @@ const App = () => {
       console.log('getting db connection');
       const db = getDBConnection();
       console.log('db connection ok');
+
       await createTable(db);
       console.log('table created');
+      
       const storedWeatherItems = await getWeatherItems(db);
       console.log('storedWeatherItems.length: ' + storedWeatherItems.length);
       if (storedWeatherItems.length) {
         console.log('storedWeatherItems.length');
         setWeatherList(storedWeatherItems);
       } else {
-        console.log('storedWeatherItems null, init new list');
+        console.log('storedWeatherItems null, save new list');
         await saveWeatherItems(db, initWeatherList);
         setWeatherList(initWeatherList);
         handleUpdateLocation(initWeatherList[0].value);
@@ -194,24 +196,17 @@ const App = () => {
   }, []);
 
   useEffect(() => {
+    console.log('useEffect loadDataCallback');
     loadDataCallback();
   }, []);
 
   useEffect(() => {
-    if (weatherList && weatherList.length > 0) {
-      weatherList.forEach(element => {
-        console.log('element.id: ' + element.id);
-        console.log('element.value: ' + element.value);
-      });
-      // handleUpdateLocation(weatherList[0].value);
-    }
-  }, [weatherList]);
-
-  useEffect(() => {
+    console.log('useEffect addWeather');
     addWeather();
   }, [location]);
 
   const addWeather = async () => {
+    console.log('addWeather');
     if (!location.trim()) return;
     try {
       // const newWeatherList = [...weatherList, {

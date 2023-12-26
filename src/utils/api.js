@@ -53,18 +53,6 @@
     r.results.map(x => unique.filter(a => a.id == x.id).length > 0 ? null : unique.push(x));
     return unique;
   };
-
-  export const removeDuplicatesSafe = arr => {
-    var seen = {};
-    var ret_arr = [];
-    for (var i = 0; i < arr.length; i++) {
-        if (!(arr[i] in seen)) {
-            ret_arr.push(arr[i]);
-            seen[arr[i]] = true;
-        }
-    }
-    return ret_arr;
-}
   
   /*
    * GEt WEATHER by current Location <<< iD  >>>
