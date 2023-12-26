@@ -162,8 +162,8 @@ const App = () => {
       const storedWeatherItems = await getWeatherItems(db);
       console.log('storedWeatherItems.length: ' + storedWeatherItems.length);
       if (storedWeatherItems.length) {
-        console.log('storedWeatherItems.length');
         setWeatherList(storedWeatherItems);
+        handleUpdateLocation(storedWeatherItems[0].value);
       } else {
         console.log('storedWeatherItems null, save new list');
         await saveWeatherItems(db, initWeatherList);
