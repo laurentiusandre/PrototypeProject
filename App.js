@@ -96,12 +96,15 @@ const App = () => {
 
   // Update current location
   const handleUpdateLocationByCoord = async item => {
+    if (item.latitude === current.latitude &&
+          item.longitude === current.longitude && !error) {
+        console.log('lat/long already requested');
+        setLoading(false);
+        return;
+    } else {
+      console.log('requesting new lat/long');
+    }
     setLoading(true);
-    // if (item.latitude === current.latitude &&
-    //       item.longitude === current.longitude && !error) {
-    //     console.log('lat/long already requested');
-    //     return;
-    // }
 
     try {
       const loc = item;
