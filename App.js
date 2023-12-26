@@ -17,6 +17,7 @@ import getIconForWeather from './src/utils/getIconForWeather';
 import moment from 'moment';
 import SearchInput from './src/components/SearchInput';
 import ItemText from './src/components/ItemText';
+import WeatherItem from './src/models/WeatherItem';
 import { throttle, debounce } from "throttle-debounce";
 import { getDBConnection, getWeatherItems, saveWeatherItems, createTable, clearTable, deleteWeatherItem } from './src/services/dbService';
 
@@ -184,7 +185,7 @@ const App = () => {
     if (!location.trim()) return;
     try {
       const newWeatherList = [...weatherList];
-      newWeatherList[0] = { id: 0, value: location }
+      newWeatherList[0] = { ...WeatherItem, value: location }
       setWeatherList(newWeatherList);
       const db = getDBConnection();
       await saveWeatherItems(db, newWeatherList);
