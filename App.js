@@ -116,7 +116,6 @@ const App = () => {
       console.log(weathercode);
       console.log(weather);
 
-      setLoading(false);
       setError(false);
       setLocation(location);
       setCurrent(current);
@@ -124,8 +123,9 @@ const App = () => {
       setTemperature(temperature);
       setCreated(created);
     } catch (e) {
-      setLoading(false);
       setError(true);
+    } finally {
+      setLoading(false);
     }
   };
 
