@@ -105,6 +105,8 @@
   
     return {
       location: r.name,
+      latitude: r.latitude,
+      longitude: r.longitude,
       weathercode: weather_code,
       temperature: temperature_2m,
       created: time

@@ -27,7 +27,14 @@ const App = () => {
   const [input, setInput] = useState('');
   const [locations, setLocations] = useState([]);
   const [location, setLocation] = useState('');
-  const [current, setCurrent] = useState({});
+  const [current, setCurrent] = useState({
+    location: '',
+    latitude: '',
+    longitude: '',
+    weathercode: '',
+    temperature: '',
+    created: '2000-01-01T00:00:00.000000Z'
+  });
   const [temperature, setTemperature] = useState(0);
   const [weather, setWeather] = useState('');
   const [created, setCreated] = useState('2000-01-01T00:00:00.000000Z');
