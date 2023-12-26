@@ -1,3 +1,4 @@
+import API from './axios';
 /**
  * Only ES6 =))))
  *
@@ -39,17 +40,18 @@
   };
   
   export const getLocations = async city => {
-
     console.log('fetching data to: ' + `https://geocoding-api.open-meteo.com/v1/search?name=${city}`);
-    const response = await fetch(
-      `https://geocoding-api.open-meteo.com/v1/search?name=${city}`,
-    );
+
+    const response = await (await API.get(`/search?name=${city}`).then(res => res.data));
+    const locations = response.results;
+    // const response = await fetch(
+    //   `https://geocoding-api.open-meteo.com/v1/search?name=${city}`,
+    // );
   
-    const r = await response.json();
+    // const r = await response.json();
   
-    console.log('r: ' + r);
-    console.log('r.results.length: ' + r.results.length);
-    return r.results;
+    console.log('locations.length: ' + locations.length);
+    return locations;
   };
   
   /*
@@ -80,14 +82,15 @@
       }
    */
   export const getWeather = async r => {
-  
-    const response = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${r.latitude}&longitude=${r.longitude}&current=temperature_2m,weather_code&timezone=auto`
-    );
+    API.defaults.baseURL = 'https://api.open-meteo.com/v1/';
+    const response = await (await API.get(`/forecast?latitude=${r.latitude}&longitude=${r.longitude}&current=temperature_2m,weather_code&timezone=auto`).then(res => res.data));
+    // const response = await fetch(
+    //   `https://api.open-meteo.com/v1/forecast?latitude=${r.latitude}&longitude=${r.longitude}&current=temperature_2m,weather_code&timezone=auto`
+    // );
     console.log('fetching data to: ' + `https://api.open-meteo.com/v1/forecast?latitude=${r.latitude}&longitude=${r.longitude}&current=temperature_2m,weather_code&timezone=auto`);
   
-    let { current } = await response.json();
-    let { weather_code, temperature_2m, time } = current;
+    // let { current } = response.current;
+    let { weather_code, temperature_2m, time } = response.current;
   
     return {
       location: r.name,
