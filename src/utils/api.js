@@ -49,9 +49,7 @@
   
     console.log('r: ' + r);
     console.log('r.results.length: ' + r.results.length);
-    const unique = [];
-    r.results.map(x => unique.filter(a => a.id == x.id).length > 0 ? null : unique.push(x));
-    return unique;
+    return r.results;
   };
   
   /*

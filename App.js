@@ -10,16 +10,14 @@ import {
   StatusBar,
   FlatList,
   Pressable,
-  useColorScheme,
 } from 'react-native';
-import { getLocation, getLocations, getWeather } from './src/utils/api';
+import { getLocations, getWeather } from './src/utils/api';
 import getImageForWeather from './src/utils/getImageForWeather';
 import getIconForWeather from './src/utils/getIconForWeather';
 import moment from 'moment';
 import SearchInput from './src/components/SearchInput';
 import ItemText from './src/components/ItemText';
 import { throttle, debounce } from "throttle-debounce";
-import WeatherItem from './src/models/WeatherItem';
 import { getDBConnection, getWeatherItems, saveWeatherItems, createTable, clearTable, deleteWeatherItem } from './src/services/dbService';
 
 const App = () => {
@@ -40,9 +38,7 @@ const App = () => {
   const [weather, setWeather] = useState('');
   const [created, setCreated] = useState('2000-01-01T00:00:00.000000Z');
 
-  const isDarkMode = useColorScheme() === 'dark';
   const [weatherList, setWeatherList] = useState([]);
-  const [newWeather, setNewWeather] = useState('');
 
   const handleDate = date => {
     return moment(date).format("HH:mm");
@@ -189,19 +185,11 @@ const App = () => {
     console.log('addWeather');
     if (!location.trim()) return;
     try {
-      // const newWeatherList = [...weatherList, {
-      //   id: weatherList.length ? weatherList.reduce((acc, cur) => {
-      //     if (cur.id > acc.id) return cur;
-      //     return acc;
-      //   }).id + 1 : 0, value: location
-      // }];
-      
       const newWeatherList = [...weatherList];
       newWeatherList[0] = { id: 0, value: location }
       setWeatherList(newWeatherList);
       const db = getDBConnection();
       await saveWeatherItems(db, newWeatherList);
-      setNewWeather('');
     } catch (error) {
       console.error(error);
     }
