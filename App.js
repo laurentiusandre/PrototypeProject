@@ -17,6 +17,7 @@ import getImageForWeather from './src/utils/getImageForWeather';
 import getIconForWeather from './src/utils/getIconForWeather';
 import moment from 'moment';
 import SearchInput from './src/components/SearchInput';
+import ItemText from './src/components/ItemText';
 import { throttle, debounce } from "throttle-debounce";
 import WeatherItem from './src/models/WeatherItem';
 import { getDBConnection, getWeatherItems, saveWeatherItems, createTable, clearTable, deleteWeatherItem } from './src/services/dbService';
@@ -148,27 +149,6 @@ const App = () => {
     }
   };
 
-  const getItemText = item => {
-    let mainText = getTitle(item);
-
-    return (
-      <View style={{ flexDirection: "row", alignItems: "center", padding: 15 }}>
-        <View style={{ flexShrink: 1 }}>
-          <Text style={{ fontWeight: "700" }}>{mainText}</Text>
-          <Text style={{ fontSize: 12 }}>{item.country}</Text>
-        </View>
-      </View>
-    );
-  };
-
-  const getTitle = item => {
-    let mainText = item.name;
-    if (item.admin1)
-      mainText += ", " + item.admin1;
-
-    return mainText;
-  };
-
   const loadDataCallback = useCallback(async () => {
     try {
       const initWeatherList = [{ id: 0, value: 'Seoul' }, { id: 1, value: 'Bandung' }, { id: 2, value: 'Medan' }];
@@ -289,7 +269,7 @@ const App = () => {
                         handleUpdateLocationByCoord(item)
                       }
                     >
-                      {getItemText(item)}
+                      <ItemText item={item} />
                     </Pressable>
                   )}
                   keyExtractor={(item, index) => item.id + index}
